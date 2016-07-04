@@ -249,7 +249,7 @@ public final class ListUrlsController {
   @Template("urls.ftl")
   public Object handleListUrls() throws Exception {
     // Return the view model for urls.ftl.
-    return fetchUrls();
+    return ImmutableMap.of("urls", fetchUrls());
   }
 ...
 }
@@ -277,13 +277,15 @@ public final class AppLauncher {
         </code></pre></div>
         <p>Now, you can add static files. Place an image at <code>/src/main/resources/myapp/static/image.jpg</code>. The image will be served at <a href="http://localhost/image.jpg">http://localhost/image.jpg</a>.</p>
         <h3>Handling Forms</h3>
+        <p>Consider the following web form:</p>
         <div class="highlighter-rouge"><div class="file">Form</div><pre><code class="html">
-&lt;form action="/urls/add" method="POST"&gt;
+&lt;form action="http://localhost/urls/add" method="POST"&gt;
   Code: &lt;input type="text" name="code" value="" /&gt;
   URL: &lt;input type="text" name="url" value="" /&gt;
   &lt;input type="submit" value="Add URL" /&gt;
 &lt;/form&gt;
         </code></pre></div>
+        <p>A handler for this form might look like:</p>
         <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/controllers/AddUrlController.java</div><pre><code class="java">
 package myapp.controllers;
 import lightning.ann.*;
@@ -302,7 +304,7 @@ public final class AddUrlController {
       db().transaction(() -> {
         try (NamedPreparedStatement q1 =
                  db().prepare("SELECT * FROM tinyurls WHERE code = :code;")) {
-          q1.setString(code, queryParam("code").stringValue());
+          q1.setString("code", queryParam("code").stringValue());
           try (ResultSet r1 = q1.executeQuery()) {
             badRequestIf(r1.next(), "Provided code already in use.");
           }
@@ -316,19 +318,17 @@ public final class AddUrlController {
         )).executeUpdateAndClose();
       });
 
-      response().status(HTTPStatus.OK);
-      response().write("URL saved.");
+      response().write("Your URL has been saved.");
     } else {
-      response().status(HTTPStatus.BAD_REQUEST);
-      response().write(validator().getErrorsAsString());
+      badRequest(validator().getErrorsAsString());
     }
   }
 }
         </code></pre></div>
         <h3>Users and Authentication</h3>
-        <p>You may provide your own system for managing users and authentication, or, for convenience, you may choose to utilize the ones provided by Lightning.</p>
-        <p>By default, we utilize a database driver to store users, sessions, and authentication. You need to import the <a href="https://github.com/lightning-framework/lightning/tree/master/src/main/resources/lightning/schema" target="_blank">schema</a> into your database.</p>
-        <p>You'll need to make your own log in, log out, and registration controllers. We have included some skeleton examples for convenience.</p>
+        <p>You may provide your own third-party system for managing users, sessions, and authentication (see <a href="#external">Using External Tools</a>), or, for convenience, you may choose to utilize the ones provided by Lightning.</p>
+        <p>By default, we utilize a SQL database driver to store users, sessions, and authentication. You may <a href="#config">configure</a> different storage drivers if you wish. To use the provided database storage driver, you need to import the <a href="https://github.com/lightning-framework/lightning/tree/master/src/main/resources/lightning/schema" target="_blank">schema</a> into your database.</p>
+        <p>Our APIs provide convenience methods for handling authentication, sessions, and user data. However, you'll still need to make your own log in, log out, and registration controllers. We have included some skeleton examples for convenience.</p>
 
         <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/controllers/AuthController.java</div><pre><code class="java">
 public final class AuthController {
@@ -355,7 +355,7 @@ public final class AuthController {
   public void handleLoginPOST() throws Exception {
     redirectIfLoggedIn(url.to("/"));
 
-    // Add validation.
+    // Add form validation.
 
     try {
       if (passesValidation()) {
@@ -388,7 +388,7 @@ public final class AuthController {
 
   @Route(path="/register", methods={POST})
   public void handleRegisterPOST() throws Exception {
-    // Add validation.
+    // Add form validation.
 
      if (passesValidation()) {
       // Create the user account.
@@ -396,7 +396,7 @@ public final class AuthController {
       String password = queryParam("password").stringValue();
       String email = queryParam("email").stringValue();
 
-      // Exception will be thrown on failure.
+      // Note: exception will be thrown on failure (e.g. duplicate username).
       User user = users().create(username, email, password);
 
       response().write("User Created!"); // Show success page.
