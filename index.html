@@ -31,7 +31,7 @@
         <p>Our design goals are:</p>
         <ul>
           <li>To provide the convenience of save-and-refresh development in Java</li>
-          <li>To include a built-in web server that allows developers to get set up quickly by writing purely Java code</li>
+          <li>To include a built-in web server that allows developers to get set up quickly by writing purely Java code (no need to learn an XML schema)</li>
           <li>To provide APIs that are convenient and easy to learn for both beginners and professionals</li>
           <li>To include the core functionality needed to build scalable modern web applications</li>
           <li>To give developers the freedom to build their applications using the tools they know and love</li>
@@ -995,6 +995,7 @@ request().ip()
 request().properties()
 request().property(name)
 request().property(name, value)
+request().removeProperty(name)
 
 // Routing information:
 request().routeParams()
@@ -1014,6 +1015,7 @@ request().rawCookie(name)
 
 // Reading query parameters:
 request().queryParams()
+request().queryParamsExcepting(keys)
 request().queryParam(name)
 
 // Reading HTTP headers:
@@ -1035,7 +1037,7 @@ request().raw()
         <a name="responses"></a>
         <h2>Responses</h2>
         <p>An outgoing HTTP response is represented by <code>lightning.http.Response</code>.</p>
-        <p>You should treat responses as being <em>unbuffered</em>. You may mutate any parts of the response header at will before writing anything to the response body. However, once the first byte is written to the response body, the response is considered <em>committed</em> and further attempts to modify parts of the response header will fail as the response header and any bytes written to the body may already have been transmitted across the network (depending upon server load).</p>
+        <p>You should treat responses as being <em>unbuffered</em>. You may mutate any parts of the response header at will before writing anything to the response body. However, once the first byte is written to the response body, the response is considered <em>committed</em> and further attempts to modify parts of the response header will fail as the response header and any bytes written to the body may already have been transmitted across the network (depending upon server load and configured buffer size).</p>
         <p>By default, responses are sent with a status of <code>200 OK</code> and a content-type of <code>text/html; charset=UTF-8</code>. Unless an explicit content-length is specified before the response is committed, the response will be sent with HTTP chunked transfer encoding.</p>
 
         <div class="highlighter-rouge"><div class="file">API Reference</div><pre><code class="java">
@@ -1736,6 +1738,39 @@ public final class MyController extends AbstractController {
   @Route(path="/", methods={GET})
   public void handleRequest() throws Exception {
     r().table("table").insert(...);
+  }
+}
+        </code></pre></div>
+      </section>
+
+      <section>
+        <a name="server_control"></a>
+        <h2>Server Control</h2>
+        <p><code><a href="https://github.com/lightning-framework/lightning/blob/master/src/main/java/lightning/server/LightningServer.java" target="_blank">LightningServer</a></code> encapsulates a single instance of Lightning with its own configuration. You may run multiple instances of Lightning in the same process by creating multiple instances of <code>LightningServer</code>.</p>
+        <p>Each instance of <code>LightningServer</code> may be independently stopped and started.</p>
+         <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/AppLauncher.java</div><pre><code class="java">
+package myapp;
+import lightning.server.*;
+import lightning.inject.*;
+import lightning.config.*;
+
+public final class AppLauncher {
+  public static void main(String[] args) throws Exception {
+    Config config = new Config();
+    InjectorModule injector = new InjectorModule();
+
+    // ... set up config and injector ...
+
+    // Create a new server.
+    LightningServer server = new LightningServer(config, injector);
+
+    // Tell the server to start responding to requests.
+    // start() will not return until the server is ready to respond to requests.
+    server.start();
+
+    // Block the calling thread until the server is stopped.
+    // stop() may be invoked in another thread to stop the server.
+    server.join();
   }
 }
         </code></pre></div>
