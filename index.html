@@ -444,14 +444,14 @@ public final class AuthController {
     }
 
     // Re-show registration form on error.
-    render('register.ftl', 
+    render('register.ftl',
            ImmutableMap.of("errors", validator.getErrors()); // View model for template.
   }
 }
         </code></pre></div>
         <p>You can access the currently authenticated user in any of your controllers by invoking <code>user()</code>. If no user is logged in, a <code>NotAuthorizedException</code> is thrown which generates an HTTP 401 error page. You can check if a user is logged in by invoking <code>isLoggedIn()</code>. Annotating a route with <code>@RequireAuth</code> will filter unauthenticated requests for that route. Alternatively, you may want to look into using path-based filters.</p>
 
-      
+
 
       </section>
 
@@ -677,6 +677,7 @@ public final class MyController {
           <tr><td><code>lightning.mvc.HandlerContext</code> (instance version of <code>lightning.server.Context</code>)</td></tr>
           <tr><td><code>javax.servlet.http.HttpServletRequest</code> (equivalent to invoking <code>request().raw()</code>)</td></tr>
           <tr><td><code>javax.servlet.http.HttpServletResponse</code> (equivalent to invoking <code>response().raw()</code>)</td></tr>
+          <tr><td><code>lightning.cache.Cache</code>  (equivalent to invoking <code>cache()</code>)</td></tr>
           <tr><td><code>org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest</code> (only in <a href="#websockets">Web Socket Factories</a>)</td></tr>
           <tr><td><code>org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse</code> (only in <a href="#websockets">Web Socket Factories</a>)</td></tr>
         </table>
@@ -1080,8 +1081,8 @@ import static lightning.server.Context.*;
 public final class CustomExceptionHandler {
   @ExceptionHandler(Throwable.class)
   public static void handleException(Throwable e) throws Exception {
-    renderErrorPage(500, 
-                    'Internal Server Error', 
+    renderErrorPage(500,
+                    'Internal Server Error',
                     'An error occurred servicing your request. Please try again.');
   }
 
@@ -1210,7 +1211,7 @@ request().segments()
 request().path()
 
 // Return whether or not the request matches a path pattern
-// Pattern is in the same format as routing paths 
+// Pattern is in the same format as routing paths
 request().matches(pathPattern)
 
 // Returns the complete URL of the request
@@ -1292,7 +1293,7 @@ request().raw()
         <div class="highlighter-rouge"><div class="file">API Reference</div><pre><code class="java">
 import static lightning.server.Context.request;
 
-// Whether or not some bytes of the response have 
+// Whether or not some bytes of the response have
 // already been committed (written) to the network
 response().hasSentHeaders()
 
@@ -1337,7 +1338,7 @@ response().raw()
         <h2>Type-Safe Parameters</h2>
         <p>A huge benefit of developing web applications in Java over other languages like PHP or Python is type safety. Unfortunately, ensuring type safety can be difficult when dealing with values whose types cannnot be known at compile time. In particular, web developers will commonly encounter values that are user-provided or deserialized from external storage systems. To enable type safety in these situations, Lightning provides the <code>Param</code> and <code>ObjectParam</code> value wrapper classes.</p>
         <p>You may have noticed that, throughout the Lightning APIs, most methods that return a user-provided string value (such as <code>request().queryParam(name)</code>) return an instance of <code>lightning.mvc.Param</code> instead of a nullable <code>String</code> or <code>Optional&lt;String&gt;</code>. Similarly, most methods that return an object value of unknown type (such as <code>session().get(key)</code>) return an instance of <code>lightning.mvc.ObjectParam</code> instead of a nullable <code>Object</code> or <code>Optional&lt;Object&gt;</code>.</p>
-      
+
         <p>Let's consider a query parameter (form field) for which you want to accept an integer. In Lightning, you can conveniently write:</p>
         <div class="highlighter-rouge"><div class="file">Code Snippet</div><pre><code class="java">
 import static lightning.server.Context.*;
@@ -1947,14 +1948,14 @@ try (NamedPreparedStatement query = db().prepare(
 // The closure may return nothing OR a value.
 // If the given closure returns a value, transaction() will also return that value.
 // If not specified, isolation level defaults to connection isolation level.
-T value = db().transaction(() -> { 
-                               /* ... queries ... */ 
-                               return (T)value; 
+T value = db().transaction(() -> {
+                               /* ... queries ... */
+                               return (T)value;
                            })
-T value = db().transaction(() -> { 
-                              /* ... queries ... */ 
-                              return (T)value; 
-                           }, 
+T value = db().transaction(() -> {
+                              /* ... queries ... */
+                              return (T)value;
+                           },
                            isolationLevel)
 db().transaction(() -> { /* ... queries ... */ })
 db().transaction(() -> { /* ... queries ... */ }, isolationLevel)
