@@ -31,17 +31,18 @@
         <p>Our design goals are:</p>
         <ul>
           <li>To provide the convenience of save-and-refresh development in Java</li>
-          <li>To include a built-in web server that allows developers to get set up quickly by writing purely Java code (no need to learn an XML schema)</li>
+          <li>To provide powerful debugging tools that speed up development</li>
+          <li>To include a built-in web server that allows developers to get set up quickly by writing purely Java</li>
           <li>To provide APIs that are convenient and easy to learn for both beginners and professionals</li>
-          <li>To include the core functionality needed to build scalable modern web applications</li>
-          <li>To give developers the freedom to build their applications using the tools they know and love</li>
+          <li>To include the core functionality needed to build secure, scalable modern web applications</li>
+          <li>To give developers the freedom to use Lightning with the tools they know and love</li>
         </ul>
-        <p>Features:</p>
+        <p>Built-In Features:</p>
         <ul>
           <li>Routing (w/ wildcards and parameters)</li>
           <li>Path-Based Filters (w/ wildcards and parameters)</li>
           <li>Templating (w/ Freemarker by default)</li>
-          <li>Emails</li>
+          <li>Emails (via SMTP)</li>
           <li>SSL</li>
           <li>MySQL (w/ connection pooling, transactions)</li>
           <li>Sessions</li>
@@ -50,9 +51,10 @@
           <li>Form Validation</li>
           <li>Async Handlers/Server-Sent Events</li>
           <li>Web Sockets</li>
-          <li>HTTP/2 Support</li>
+          <li>HTTP2 &amp; HTTP2C Support</li>
           <li>Dependency Injection</li>
           <li>Debug Mode</li>
+          <li>...and so much more!</li>
         </ul>
         <p><a href="https://github.com/lightning-framework/lightning" target="_blank">Source (GitHub)</a></p>
       </section>
@@ -161,7 +163,7 @@ public final class HomeController {
 
         <p>To view your application, run <code>AppLauncher</code> and navigate to <a href="http://localhost/" target="_blank">http://localhost/</a> in the web browser of your choice.</p>
 
-        <div class="info-box">Lightning contains many additional configuration options. For example, you can set the <code>server.port</code> property to change the port that the build-in server binds to. See <a href="#config">here</a> for a complete list of available options. See <a href="#external">here</a> for instructions on integrating third-party databases and libraries with Lightning.</div>
+        <div class="info-box">Lightning contains many additional configuration options. For example, you can set the <code>server.port</code> property to change the port that the built-in server binds to. See <a href="#config">here</a> for a complete list of available options. See <a href="#external">here</a> for instructions on integrating third-party databases and libraries with Lightning.</div>
         <h3>Using an SQL Database</h3>
         <p>First, you need to configure a database by modifying your launcher:</p>
         <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/AppLauncher.java</div><pre><code class="java">
@@ -268,30 +270,35 @@ public final class ListUrlsController {
   &lt;/#list&gt;
 &lt;/#escape&gt;
         </code></pre></div>
-        <p>For more information, see the <a href="#templates">Lightning Templates Documentation</a>. You may also find the <a href="http://freemarker.org/" target="_blank">FreeMarker Documentation</a> useful.</p>
+        <p>For more information, see the <a href="#templates">Lightning Templates Documentation</a>. You may also find the <a href="http://freemarker.org/" target="_blank">FreeMarker Documentation</a> useful. If you would prefer to use a template language other than FreeMarker, you may <a href="#config">configure</a> one.</p>
         <h3>Static Files</h3>
-        <p>First, we need to configure static files by modifying the launcher:</p>
+        <p>To serve static files, configure a root directory by modifying your launcher:</p>
         <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/AppLauncher.java</div><pre><code class="java">
 ...
 public final class AppLauncher {
   public static void main(String[] args) throws Exception {
     ...
+    // Specify a path in your project class path.
+    // Prefer using a relative path so that you can package to a JAR.
     config.server.staticFilesPath = "myapp/static";
     ...
   }
 }
         </code></pre></div>
-        <p>Now, you can add static files. Place an image at <code>/src/main/resources/myapp/static/image.jpg</code>. The image will be served at <a href="http://localhost/image.jpg">http://localhost/image.jpg</a>.</p>
+        <p>All static files will be served on their paths relative to the root directory you specify. For example, with the above configuration, you can place an image at <code>/src/main/resources/myapp/static/image.jpg</code> and it will be served on <a href="http://localhost/image.jpg">http://localhost/image.jpg</a>.</p>
+
+        <p>In production, Lightning will attempt to serve these files optimally (using memory-mapped buffers, in-memory caching, and HTTP caching). You may <a href="#config">configure</a> the behavior of these caches if you wish. In debug mode, all caching will be disabled to ensure that you receive the newest version of these files each time you refresh the page. In both modes, Lightning supports HTTP range queries.</p>
+
         <h3>Handling Forms</h3>
-        <p>Consider the following web form:</p>
+        <p>Consider the following web form for adding a new short URL:</p>
         <div class="highlighter-rouge"><div class="file">Form</div><pre><code class="html">
 &lt;form action="http://localhost/urls/add" method="POST"&gt;
-  Code: &lt;input type="text" name="code" value="" /&gt;
-  URL: &lt;input type="text" name="url" value="" /&gt;
+  Code: &lt;input type="text" name="code" /&gt;
+  URL: &lt;input type="text" name="url" /&gt;
   &lt;input type="submit" value="Add URL" /&gt;
 &lt;/form&gt;
         </code></pre></div>
-        <p>A handler for this form might look like:</p>
+        <p>You might write a handler for this form as follows:</p>
         <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/controllers/AddUrlController.java</div><pre><code class="java">
 package myapp.controllers;
 import lightning.ann.*;
@@ -336,8 +343,8 @@ public final class AddUrlController {
 }
         </code></pre></div>
 
-        <h3>Getting a Faster Development Cycle</h3>
-        <p>You should enable <a href="#debug">debug mode</a> to speed up your development process by modifying your launcher.</p>
+        <h3>Speeding Up Development</h3>
+        <p>You should enable debug mode to speed up your development process. You can do this by modifying your launcher:</p>
 
         <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/AppLauncher.java</div><pre><code class="java">
 public final class AppLauncher {
@@ -350,106 +357,27 @@ public final class AppLauncher {
 }
         </code></pre></div>
 
-        <p>After enabling debug mode, you should find that your code changes take effect immediately when you refresh the page in your browser without the need to restart the server. You should also try throwing an exception from one of your route handlers and viewing the page in your browser. You should see an in-browser stack trace that details what went wrong. For more information, see <a href="#debug">Debug Mode</a>.</p>
+        <p>After enabling debug mode, you should find:</p>
+        <ul>
+          <li>Your code changes take immediate effect when you refresh the page in your browser without the need to restart the server (save-and-refresh development). In order for this feature to work, you'll need to make sure your IDE is configured to recompile automatically when you save.</li>
+          <li>You will see in-browser stack traces when one of your route handlers throws an exception. In production, you would simply see a generic 500 Internal Server Error page which reveals no information about the error.</li>
+          <li>You can see a route overview on <a href="http://localhost/~lightning/routes">http://localhost/~lightning/routes</a>.</li>
+        </ul>
+
+
+        <a href="images/debugscreen.png" target="_blank" class="image-frame">
+          <img src="images/debugscreen.png" />
+          <span>An in-browser debug stack trace.</span>
+        </a>
+        <a href="images/routeoverview.png" target="_blank" class="image-frame">
+          <img src="images/routeoverview.png" />
+          <span>The in-browser route overview.</span>
+        </a>
+
+        <p>For more details, see <a href="#debug">debug mode</a>.</p>
 
         <h3>Users and Authentication</h3>
-        <p>You may provide your own third-party system for managing users, sessions, and authentication (see <a href="#external">Using External Tools</a>), or, for convenience, you may choose to utilize the ones provided by Lightning.</p>
-        <p>By default, we utilize a SQL database driver to store users, sessions, and authentication. You may <a href="#config">configure</a> different storage drivers if you wish. To use the provided database storage driver, you simply need to import the <a href="https://github.com/lightning-framework/lightning/tree/master/src/main/resources/lightning/schema" target="_blank">schema</a> into your database.</p>
-        <p>Our APIs provide convenience methods for handling authentication, sessions, and user data. However, you'll still need to make your own log in, log out, and registration controllers. We have included some skeletons for your convenience.</p>
-
-        <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/controllers/AuthController.java</div><pre><code class="java">
-public final class AuthController {
-  @Route(path="/login", methods={GET})
-  @Template('login.ftl')
-  public Object handleLoginGET() throws Exception {
-    // Display your login form.
-    return ImmutableMap.of(); // The view model.
-  }
-
-  @Route(path="/register", methods={GET})
-  @Template('register.ftl')
-  public Object handleRegisterGET() throws Exception {
-    // Display your registration form.
-    return ImmutableMap.of(); // The view model.
-  }
-
-  @Route(path="/logout", methods={GET})
-  public void handleLogoutGET() throws Exception {
-    if (isLoggedIn()) {
-      auth().logout(true);
-    }
-
-    redirect(url.to("/"));
-  }
-
-  @Route(path="/login", methods={POST})
-  @Template('login.ftl')
-  public Object handleLoginPOST() throws Exception {
-    redirectIfLoggedIn(url.to("/"));
-
-    // Add form validation.
-    validate("username").isNotEmpty();
-    validaet("password").isNotEmpty();
-
-    try {
-      if (passesValidation()) {
-        // Delegate to framework authentication.
-        String username = queryParam("username").stringValue();
-        String password = queryParam("password").stringValue();
-        boolean persistent = queryParam("persistent").isChecked();
-        auth().attempt(username, password, persistent, null);
-        redirect(url().to("/profile"));
-      }
-    } catch (AuthException e) {
-      switch (e.getType()) {
-        case NO_USER:
-        case INVALID_PASSWORD:
-        case INVALID_USERNAME:
-        case USER_BANNED:
-          validator().addError("username", "Invalid username/password combination.");
-          break;
-        case IP_THROTTLED:
-        case USER_THROTTLED:
-          validator().addError("username", "You must wait before trying again.");
-          break;
-        default:
-          throw e; // Re-throw the exception to generate an internal server error.
-      }
-    }
-
-    // Re-show login page with errors if authentication failed.
-    return ImmutableMap.of("errors", validator.getErrors()); // View model for template.
-  }
-
-  @Route(path="/register", methods={POST})
-  public void handleRegisterPOST() throws Exception {
-    // TODO: Add form validation.
-    validate("username").isShorterThan(30)
-                        .isLongerThan(3)
-                        .isAlphaNumeric();
-    validate("password").isLongerThan(5)
-                        .isShorterThan(100);
-    validate("email").isEmail();
-
-     if (passesValidation()) {
-      // Create the user account.
-      String username = queryParam("username").stringValue();
-      String password = queryParam("password").stringValue();
-      String email = queryParam("email").stringValue();
-
-      // Note: exception will be thrown on failure (e.g. duplicate username).
-      User user = users().create(username, email, password);
-      render('register_success.ftl', ImmutableMap.of());
-      return;
-    }
-
-    // Re-show registration form on error.
-    render('register.ftl',
-           ImmutableMap.of("errors", validator.getErrors()); // View model for template.
-  }
-}
-        </code></pre></div>
-        <p>You can access the currently authenticated user in any of your controllers by invoking <code>user()</code>. If no user is logged in, a <code>NotAuthorizedException</code> is thrown which generates an HTTP 401 error page. You can check if a user is logged in by invoking <code>isLoggedIn()</code>. Annotating a route with <code>@RequireAuth</code> will filter unauthenticated requests for that route. Alternatively, you may want to look into using path-based filters.</p>
+        <p>You may provide your own third-party system for managing users, sessions, and authentication (see <a href="#external">Using External Tools</a>), or, for convenience, you may choose to utilize the ones provided by Lightning (see <a href="#auth">Authentication</a>).</p>
 
 
 
@@ -522,28 +450,35 @@ injector.bindClassToInstance(MyAppConfig.class, config);
       <section>
         <a name="debug"></a>
         <h2>Debug Mode</h2>
-        <p>To enable debug mode, <a href="#config">configure</a> <code>enableDebugMode=true</code>. Consequently, you can check (in your code) if debug mode is enabled by invoking <code>config().enableDebugMode</code> on <code>lightning.server.Context</code>.</p>
-        <p><strong>SECURITY ADVISORY:</strong> Debug mode <em>should never</em> be enabled in production deployments as it exposes system internals and degrades performance.</p>
-        <p>Restrictions:</p>
+        <p>To enable debug mode, <a href="#config">configure</a> <code>enableDebugMode</code> to <code>true</code> in your application launcher.</p>
+        <p>There are cases where you may wish to change the behavior of your application code when debug mode is enabled (for example, to disable caching done by your code). You can check (in your code) if debug mode is enabled by invoking <code>config().enableDebugMode</code> on <code>lightning.server.Context</code>.</p>
+        <p>Debug mode <strong><em>should never</em></strong> be enabled in production deployments as it exposes system internals and severely degrades scalability.</p>
+        <p>In order to use debug mode, you must:</p>
         <ul>
-          <li>Must set working directory to the project root folder (where <code>pom.xml</code> is)</li>
-          <li>Must follow Maven directory structure conventions</li>
-          <li>Cannot use debug mode when packaged to a JAR</li>
-          <li>Web Sockets cannot reloaded automatically</li>
+          <li>Set the working directory to the project root folder (where <code>pom.xml</code> is)</li>
+          <li>Follow Maven directory structure conventions (place code in <code>src/main/java</code> and resources in <code>src/main/resources</code>)</li>
         </ul>
-        <p>Features:</p>
+        <p>In addition, keep in mind that debug mode will not work when running from a JAR.</p>
+        <p>If you enable debug mode, the following features will be activated:</p>
         <ul>
-          <li>Enables automatic hot reloading of routes, exception handlers, filters, etc. defined in <code>autoReloadPrefixes</code></li>
-          <li>Enables automatic hot reloading of all Java classes in <code>autoReloadPrefixes</code> by using a custom class loader. Not all code can be safely reloaded. You should make sure that you understand the limitations of <a href="https://www.toptal.com/java/java-wizardry-101-a-guide-to-java-class-reloading" target="_blank">Java Class Loading</a>. Types for which you have configured <a href="#deps_injection">dependency injection</a> may not be reloaded safely.</li>
-          <li>Enables exception stack traces and debug information in browser (when debug mode is disabled, a generic internal server error page is shown instead).</li>
-          <li>Enables template errors in browser</li>
-          <li>Disables all HTTP caching of static files</li>
-          <li>Forces reloads of static files and templates from disk</li>
-          <li>Enables an interactive in-browser route overview on <code>debugRouteMapPath</code></li>
+          <li>Enables automatic hot reloading of all Java classes defined within a package specified in your configured <code>autoReloadPrefixes</code> by using a custom class loader. This includes all routes, exception handlers, filters, etc. defined within those packages. In order for this feature to work, you will want to configure your IDE to automatically recompile on save. <strong>It is important to understand that not all code can be safely reloaded!</strong> You should make sure that you understand the limitations of <a href="https://www.toptal.com/java/java-wizardry-101-a-guide-to-java-class-reloading" target="_blank">Java Class Loading</a> (outlined below). In particular, types for which you have configured <a href="#deps_injection">dependency injection</a> and any code in <code>lightning.*</code> or any of its dependencies may not be reloaded safely.</li>
+          <li>Enables displaying exception stack traces and debug information in-browser. This debug page will show <em>instead of</em> the generic 500 Internal Server error page generated by the framework that you would see in production (with debug mode disabled). You may add additional search paths for code snippets by specifying <code>codeSearchPaths</code>. Keep in mind that finding code snippets is an imperfect art (there's a decent amount of guess work involved since the compiled Java byte code does not contain all of the information available in the source code).</li>
+          <li>Enables displaying template errors in-browser</li>
+          <li>Disables all caching of static files (both server-side and client-side)</li>
+          <li>Disables all caching of template files</li>
+          <li>Enables an interactive in-browser route overview on the configured <code>debugRouteMapPath</code></li>
         </ul>
-        <p>Please keep in mind that errors are ALWAYS <a href="#logging">logged</a> regardless of whether or not debug mode is enabled.</p>
-        <p>An in-browser stack trace might look like:</p>
-        <img src="https://cloud.githubusercontent.com/assets/3498024/14005744/3fa323ba-f134-11e5-9f72-00da49a46ab7.png" />
+        <p>Please keep in mind that errors are <em>always</em> <a href="#logging">logged</a> regardless of whether or not debug mode is enabled.</p>
+
+        <a href="images/debugscreen.png" target="_blank" class="image-frame">
+          <img src="images/debugscreen.png" />
+          <span>An in-browser debug stack trace.</span>
+        </a>
+        <a href="images/routeoverview.png" target="_blank" class="image-frame">
+          <img src="images/routeoverview.png" />
+          <span>The in-browser route overview.</span>
+        </a>
+
         <h3>Code Hot-Swapping</h3>
 
         <p>The ability to reload code changes without restarting the web server is one of Lightning's most powerful features. This feature brings the save-and-refresh style development that has made languages like PHP and Python popular for web development to Java. In order to use this feature, you will need to enable debug mode and configure <code>autoReloadPrefixes</code>. To make best use of this feature, you will want to use an IDE or build process that automatically recompiles Java class files when you save code changes. Eclipse and IntelliJ both support this functionality.</p>
@@ -574,14 +509,14 @@ injector.bindClassToInstance(MyAppConfig.class, config);
 
         <p>Our recommendation is to enable code hot-swapping for all of your application code except:</p>
         <ul>
-          <li>The class containing your <code>main</code> method</li>
+          <li>The class containing your <code>main</code> method (the launcher)</li>
           <li>Any classes which are dependency injected</li>
           <li>Any classes which are referenced by non-reloadable code</li>
-          <li>Any classes defined by Lightning or its dependencies</li>
-          <li>Any dependencies for which the source code is not available</li>
+          <li>Any classes defined by Lightning (<code>lightning.*</code>) or its dependencies</li>
+          <li>Any classes which cannot be modified during runtime (e.g. Maven dependencies)</li>
         </ul>
 
-        <p>NOTE: Reloading dependency-injectable classes is problematic because, for example, <code>InjectorModule::bindClassToInstance</code> called by your launcher binds the <code>Class</code> object loaded by the system class loader to an instance of that class with the code snapshot created by the system class loader. If that class is marked as reloadable, then, when your reloadable code wishes to inject an instance of that class, the reloadable code is not referencing the version of the class loaded by the system class loader, but a version loaded by a more recently created class loader. Even though that type and the type for which you installed the dependency injection binding have the same canonical name, they are distinct types referring to different snapshots of the code and therefore not type compatible. Consequently, the dependency injector will be unable to resolve the parameter.</p>
+        <p>NOTE: Reloading dependency-injectable classes is problematic because, for example, <code>InjectorModule::bindClassToInstance</code> called by your launcher binds the <code>Class</code> object loaded by the system class loader to an instance of that class with the code snapshot created by the system class loader. If that class is marked as reloadable, then, when your reloadable code wishes to inject an instance of that class, the reloadable code is not referencing the version of the class loaded by the system class loader, but a version loaded by a more recently created class loader. Even though that type and the type for which you installed the dependency injection binding have the same canonical name, the JVM treats them as distinct types referring to different snapshots of the code. Therefore, they are not type compatible. Consequently, Lightning's dependency injector will be unable to resolve an object for that parameter and will throw an exception at runtime.</p>
 
       </section>
 
@@ -610,7 +545,7 @@ injector.bindClassToInstance(MyAppConfig.class, config);
       <section>
         <a name="deps_injection"></a>
         <h2>Dependency Injection</h2>
-        <p>Lightning allows you to inject custom dependencies into most areas of the framework. This includes exception handlers, route handlers, websocket factories, filters, initializers, finalizers, controller/filter constructors - almost any method or constructor that is invoked by the framework.</p>
+        <p>Lightning allows you to inject custom dependencies into most areas of the framework. This includes exception handlers, route handlers, web sockets, filters, initializers, finalizers, controller/filter constructors - almost any method or constructor that is invoked by the framework.</p>
         <p>To configure dependency injection, you must build an <code>InjectorModule</code> and pass the module to <code>Lightning::launch</code> in your launcher.</p>
         <p>An <code>InjectorModule</code> allows you to specifies objects that you would like to be injectable. You may specify injections either by (a) their type, (b) the presence of a custom annotation on a parameter, or (c) the presence of a <code>@Inject(name)</code> annotation on the parameter. An example of configuring each of the types of injection is below:</p>
         <div class="highlighter-rouge"><div class="file">AppLauncher.java</div><pre><code class="java">
@@ -660,6 +595,9 @@ public final class MyController {
         <table class="grid">
           <tr><td><code>lightning.config.Config</code> (equivalent to invoking <code>config()</code>)</td></tr>
           <tr><td><code>lightning.mail.Mailer</code> (equivalent to invoking <code>mail()</code>)</td></tr>
+          <tr><td><code>lightning.templates.TemplateEngine</code></td></tr>
+          <tr><td><code>lightning.cache.Cache</code> (equivalent to invoking <code>cache()</code>)</td></tr>
+          <tr><td><code>lightning.json.JsonService</code></td></tr>
           <tr><td><code>lightning.db.MySQLDatabaseProvider</code> (connection pool, only if <a href="#config">configured</a>)</td></tr>
           <tr><td>Any types you install in the <code>InjectorModule</code> passed to Lightning by your launcher</td>
         </table>
@@ -675,11 +613,12 @@ public final class MyController {
           <tr><td><code>lightning.users.User</code> (equivalent to invoking <code>user()</code>)</td></tr>
           <tr><td><code>lightning.db.MySQLDatabase</code> (equivalent to invoking <code>db()</code>)</td></tr>
           <tr><td><code>lightning.mvc.HandlerContext</code> (instance version of <code>lightning.server.Context</code>)</td></tr>
+          <tr><td><code>lightning.websockets.WebSocketHandlerContext</code> (instance version of <code>lightning.websockets.WebSocketContext</code>)</td></tr>
           <tr><td><code>javax.servlet.http.HttpServletRequest</code> (equivalent to invoking <code>request().raw()</code>)</td></tr>
           <tr><td><code>javax.servlet.http.HttpServletResponse</code> (equivalent to invoking <code>response().raw()</code>)</td></tr>
           <tr><td><code>lightning.cache.Cache</code>  (equivalent to invoking <code>cache()</code>)</td></tr>
-          <tr><td><code>org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest</code> (only in <a href="#websockets">Web Socket Factories</a>)</td></tr>
-          <tr><td><code>org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse</code> (only in <a href="#websockets">Web Socket Factories</a>)</td></tr>
+          <tr><td><code>org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest</code> (only in <a href="#websockets">Web Sockets</a>)</td></tr>
+          <tr><td><code>org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse</code> (only in <a href="#websockets">Web Sockets</a>)</td></tr>
         </table>
         <h3>Query/Route Parameter Injection</h3>
         <p>You may annotate a parameter with <code>@QParam(name)</code> to inject the value of the query parameter with the given name. Similarly, you may annotate a parameter with <code>@RParam(name)</code> to inject the value of the route parameter with the given name. The annotated parameter must have type <code><a href="#parameters">Param</a></code>, <code>String</code>, <code>int/Integer</code>, <code>long/Long</code>, <code>double/Double</code>, or <code>float/Float</code>. The framework will automatically attempt to convert the provided parameter to the given type. If a conversion cannot be performed or if the query/route parameter is not present, a <code>BadRequestException</code> will be thrown.</p>
@@ -1094,7 +1033,7 @@ public final class CustomExceptionHandler {
   }
 
   private static void renderErrorPage(int code, String title, String text) throws Exception {
-    if (config().enabledebugMode) {
+    if (config().enableDebugMode) {
       throw e; // Re-throw to see stack traces.
     }
 
@@ -1113,86 +1052,152 @@ public final class CustomExceptionHandler {
       <section>
         <a name="web_sockets"></a>
         <h2>Web Sockets</h2>
-        <p>Lightning includes built-in support for web sockets.</p>
-        <p>To install a web socket, you must first define a websocket handler class that responds to events on the socket:</p>
-        <div class="highlighter-rouge"><div class="file">MyWebSocket.java</div><pre><code class="java">
-import lightning.ann.*;
-import lightning.db.*;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-// WebSocket handler classes must conform to the Jetty WebSocket API.
-@WebSocket
-public static final class MyWebSocket {
-  private final MySQLDatabaseProvider dbp;
-
-  // Take the database connection pool as a constructor parameter and save on
-  // the instance to use in event handlers.
-  public MyWebSocket(MySQLDatabaseProvider dbp) {
-    this.dbp = dbp;
-  }
-
-  @OnWebSocketConnect
-  public void connected(final Session session) throws IOException {
-    // Handle new connection.
-    // Use 'session' to respond to events with messages or to close the connection.
-    session.getRemote().sendString("HELLO!");
-
-    // Can access the database using the pool we saved.
-    try (MySQLDatabase db = dbp.getDatabase()) {
-      // ... Use db to run some queries (see db doc article) ...
-    } catch (Exception e) {
-      throw new IOException(e);
-    }
-  }
-
-  @OnWebSocketClose
-  public void closed(final Session session, final int statusCode, final String reason) {
-    // Handle closed connection.
-  }
-
-  @OnWebSocketMessage
-  public void message(final Session session, final String message) throws IOException {
-    // Handle incoming (UTF-8 text) messages.
-    session.getRemote().sendString("THANKS!");
-  }
-
-  @OnWebSocketMessage
-  public void binary(final Session session, InputStream stream) throws IOException {
-    // Handle incoming (binary) messages.
-  }
-
-
-  @OnWebSocketError
-  public void error(final Session session, final Throwable error) {
-    // Handle errors.
-  }
-}
-        </code></pre></div>
-        <p>Second, you must install a factory that produces instances of your handling class in response to incoming websocket upgrade requests to a specific path:</p>
-
-        <div class="highlighter-rouge"><div class="file">MyWebSocketFactory.java</div><pre><code class="java">
-public final class MyWebSocketFactory {
-  // Specify the path on which to install the socket.
-  // The factory method is dependency-injectable.
-  // In this case, we dependency inject the database connection pool.
-  @WebSocketFactory(path="/mywebsocket")
-  public static MyWebSocket handle(MySQLDatabaseProvider dbp) throws Exception {
-    return new MyWebSocket(dbp);
-  }
-}
-        </code></pre></div>
-        <p>A few things to keep in mind...</p>
+        <p>To define a web socket endpoint, you must define a class annotated with 
+        <code><a href="https://github.com/lightning-framework/lightning/blob/master/src/main/java/lightning/ann/WebSocket.java" target="_blank">@WebSocket(path)</a></code> within the scan prefixes you specified in your <a href="#config">config</a>. This will cause your class to be set up as a web socket endpoint handler on the given routing path. Within that class, you may define handlers for various events. These events are:</p>
         <ul>
-          <li>Web Socket handlers can be stateless singletons. In order to do this, simply have your factory return the same instance every single time.</li>
-          <li>Web Socket handler code and factories cannot be automatically reloaded in debug mode. You'll need to restart the server to see changes reflected.</li>
-          <li>Web Sockets may not be installed on paths containing wildcards or route parameters.</li>
-          <li>Web Socket factory methods are <a href="#deps_injection">injectable</a>. You may inject objects into your factory method and pass them to the constructor for your websocket handler class if needed.</li>
-          <li>Web Socket factory methods must be defined on a class within the <a href="#config">configured</a> <code>scanPrefixes</code></li>
+          <li><code>WEBSOCKET_HANDSHAKE</code> - Called upon receiving a web socket upgrade request</li>
+          <li><code>WEBSOCKET_CONNECT</code> - Called after a web socket connection is established</li>
+          <li><code>WEBSOCKET_CLOSE</code> - Called when a web socket connection terminates</li>
+          <li><code>WEBSOCKET_ERROR</code> - Called when a web socket error occurs</li>
+          <li><code>WEBSOCKET_BINARY_MESSAGE</code> - Called when a binary message is received</li>
+          <li><code>WEBSOCKET_TEXT_MESSAGE</code> - Called when a text message is received</li>
+        </ul>
+        <p>The framework will inform you at start-up if your code is not correct (for example, if you define two handlers for the same event).</p>
+        <div class="highlighter-rouge"><div class="file">MyWebSocket.java</div><pre><code class="java">
+package myapp;
+
+import lightning.ann.WebSocket;
+
+@WebSocket(path="/path")
+public class MyWebSocket {
+  /* ... define your event handlers ... */
+}
+
+        </code></pre></div>
+
+        <p>The life cycle of a web socket connection is as follows:</p>
+        <ol>
+          <li>The server invokes <code>WEBSOCKET_HANDSHAKE</code> upon receiving an upgrade request to determine whether or not the connection should be allowed to upgrade. You may also use this event handler to set the selected subprotocol (see <a href="https://tools.ietf.org/html/rfc6455" target="_blank">RFC 6455</a>).</li>
+          <li>The server creates a new instance of your handler class for the connection.</li>
+          <li>The server invokes <code>WEBSOCKET_CONNECT</code> when the connection is fully established.</li>
+          <li>The server invokes <code>WEBSOCKET_TEXT_MESSAGE</code>/<code>WEBSOCKET_BINARY_MESSAGE</code> event handlers as messages are received.</li>
+          <li>The server invokes <code>WEBSOCKET_CLOSE</code> when either endpoint terminates the connection.</li>
+        </ol>
+
+        <p>If at any time an error occurs (or if one of your event handlers throws an <code>Exception</code>), the <code>WEBSOCKET_ERROR</code> handler will be invoked immediately followed by the <code>WEBSOCKET_CLOSE</code> handler.</p>
+
+
+        <h3>WEBSOCKET_HANDSHAKE</h3>
+        <div class="highlighter-rouge"><pre><code class="java">
+@OnEvent(EventType.WEBSOCKET_HANDSHAKE)
+public static boolean onUpgradeRequest(...) throws Exception
+        </code></pre></div>
+        
+        <p>This event handler is called upon receiving an upgrade request but before the upgrade response is sent. Your event handler should return <code>true</code> to accept the connection. If you throw an exception or return <code>false</code>, the upgrade request will be rejected.</p>
+        
+        <p>This method is dependency-injectable with both global and request-specific objects (see <a href="#deps_injection">Dependency Injection</a>). In addition to the standard types, <code>ServletUpgradeRequest</code> and <code>ServletUpgradeResponse</code> are injectable (you may use these to read negotiation parameters, perform origin validation, and set the selected subprotocol if needed). You may safely use <code>lightning.server.Context</code> methods in this event handler.</p>
+
+        <p>If you do not include this event handler on your class, then all connections will be accepted by default.</p>
+
+        <h3>Constructors</h3>
+
+        <p>A web socket handler may have up to one <em>public</em> constructor. That constructor is dependency-injectable with both global and request-specific objects (see <a href="#deps_injection">Dependency Injection</a>). In addition to the standard types, <code>ServletUpgradeRequest</code> and <code>ServletUpgradeResponse</code> are injectable.</p>
+        <p>You may safely use <code>lightning.server.Context</code> methods within the constructor, but <code>lightning.websockets.WebSocketContext</code> is not available as the connection has not yet been establsihed.</p>
+        <p>All request-specific objects will go out of scope after you return from the constructor. You must not save any of these request-specific objects (e.g. Lightning's <code>Session</code>, <code>User</code>, <code>Request</code>, <code>MySQLDatabase</code>) as instance properties on your handler. Instead, you should extract the specific values you need and save those. For example, you might save the value of a cookie or the ID of the authenticated user.</p>
+        <p>If you need to use templates, mail, json, or a database connection in your web socket handler, use <code>WebSocketHandlerContext</code> in the event handlers (more details below).</p>
+
+        <p>If your constructor throws an exception, it will be as if your <code>WEBSOCKET_HANDSHAKE</code> method returned <code>false</code>.</p>
+
+        <p>You should not reserve resources in your constructor as there is no guarantee that <code>WEBSOCKET_OPEN</code> and <code>WEBSOCKET_CLOSE</code> will be executed.</p>
+
+        <h3>WEBSOCKET_CONNECT</h3>
+        <div class="highlighter-rouge"><pre><code class="java">
+@OnEvent(EventType.WEBSOCKET_CONNECT)
+public void onConnect(, ...) throws Exception
+        </code></pre></div>
+
+        <p>This event handler is called when a connection is fully established. It will be invoked exactly once for each instance of your handler class that is created. The arguments are dependency-injectable with global object types and <code>WebSocketHandlerContext</code>. You <strong>may not</strong> use <code>lightning.server.Context</code> methods in this handler, but you may use <code>lightning.websockets.WebSocketContext</code> methods.</p>
+
+        <h3>WEBSOCKET_CLOSE</h3>
+        <div class="highlighter-rouge"><pre><code class="java">
+@OnEvent(EventType.WEBSOCKET_CLOSE)
+public void onClose(int statusCode, String reason, ...) throws Exception
+        </code></pre></div>
+
+        <p>This event handler is called when a connection is terminated. The two arguments are fixed, but the remaining arguments are dependency-injectable with global object types and <code>WebSocketHandlerContext</code>. You <strong>may not</strong> use <code>lightning.server.Context</code> methods in this handler, but you may use <code>lightning.websockets.WebSocketContext</code> methods.</p>
+
+        <p>This event handler will <em>always</em> be invoked <em>exactly once</em> for each instance of your handler class upon which <code>WEBSOCKET_CONNECT</code> was invoked, regardless of who terminated the connection or why it was terminated. It will still be called if your <code>WEBSOCKET_CONNECT</code> handler throws an exception. The status code may provide insight into why the connection was closed - see <a href="https://tools.ietf.org/html/rfc6455" target="_blank">RFC 6455</a>.</p>
+
+        <h3>WEBSOCKET_ERROR</h3>
+        <div class="highlighter-rouge"><pre><code class="java">
+@OnEvent(EventType.WEBSOCKET_ERROR)
+public void onError(Throwable error, ...) throws Exception
+        </code></pre></div>
+
+        <p>This event handler is called when one of your other event handlers throws an exception, or when something goes wrong internally within the web socket implementation. The first argument is fixed, but the remaining arguments are dependency-injectable with global object types and <code>WebSocketHandlerContext</code>. You <strong>may not</strong> use <code>lightning.server.Context</code> methods in this handler, but you may use <code>lightning.websockets.WebSocketContext</code> methods.</p>
+        <p>You may use the handler to log the error if you wish, but the connection should be considered terminated if this event handler is invoked - <code>WEBSOCKET_CLOSE</code> will always be invoked afterwards.</p>
+
+        <p>If you do not define this event handler on your class (recommended), the occurence of an error will simply log the error. See <a href="#logging">logging</a> for more information.</p>
+
+        <h3>WEBSOCKET_TEXT_MESSAGE</h3>
+        <div class="highlighter-rouge"><pre><code class="java">
+@OnEvent(EventType.WEBSOCKET_TEXT_MESSAGE)
+public void onTextMessage(String message, ...) throws Exception
+        </code></pre></div>
+
+        <p>This event handler is called upon receiving a complete text message. The first argument is fixed, but the remaining arguments are dependency-injectable with global object types and <code>WebSocketHandlerContext</code>. You <strong>may not</strong> use <code>lightning.server.Context</code> methods in this handler, but you may use <code>lightning.websockets.WebSocketContext</code> methods.</p>
+
+        <p>If you do not define this event handler on your class, the reciept of a text message will cause the connection to be terminated with status code 1003 (unsupported data type).</p>
+
+        <h3>WEBSOCKET_BINARY_MESSAGE</h3>
+        <div class="highlighter-rouge"><pre><code class="java">
+@OnEvent(EventType.WEBSOCKET_BINARY_MESSAGE)
+public void onBinaryMessage(byte[] data, int offset, int length, ...) throws Exception
+        </code></pre></div>
+
+        <p>This event handler is called upon receiving a complete binary message. The first three arguments are fixed, but the remaining arguments are dependency-injectable with global object types and <code>WebSocketHandlerContext</code>. You <strong>may not</strong> use <code>lightning.server.Context</code> methods in this handler, but you may use <code>lightning.websockets.WebSocketContext</code> methods.</p>
+
+        <p>If you do not define this event handler on your class, the reciept of a binary message will cause the connection to be terminated with status code 1003 (unsupported data type).</p>
+
+        <h3>Web Socket Context</h3>
+
+        <p>You may use the static methods on <code>lightning.websockets.WebSocketContext</code> inside of the event handlers for all web socket events except for <code>WEBSOCKET_HANDSHAKE</code>. These APIs will allow you to manage the connection, send messages, and access various aspects of the framework (like the database connection). These are the web socket equivalents of <code>lightning.server.Context</code>.</p>
+
+        <p>Any methods that may safely use <code>WebSocketContext</code> are dependency-injectable with <code>WebSocketHandlerContext</code> (the instance version of the API, much like <code>HandlerContext</code> is to <code>Context</code>).</p>
+
+        <h3>Debug Mode</h3>
+
+        <p>A web socket handler's code may be reloaded automatically in <a href="#debug">debug mode</a> if the class is defined within the <code>autoReloadPrefixes</code> in your <a href="#config">configuration</a>.</p>
+
+        <p>All incoming web socket connections will always use the latest version of the code <em>at the time the connection is established</em>. If at any point a web socket connection involves a handler running outdated code, the framework will terminate that connection the next time that any web socket event occurs on it. If this happens, the triggering event will be dropped, but the <code>WEBSOCKET_CLOSE</code> handler will still be invoked on the old version of the code to allow for clean-up operations to run. When the client reconnects, they will connect to a handler running the latest version of the code.</p>
+
+        <p>The framework guarantees that a remote endpoint <em>will never</em> be allowed to communicate with outdated code. The framework does not, however, terminate existing connections immediately when the code is changed. Instead, the framework waits until the next event on that connection. If no events are occuring on a connection running outdated code, the connection will not be terminated until it times out. To get around this limitation, you may force an immediate reload by refreshing the page in your browser, or you may opt to set a lower default time out for web socket connections when running in debug mode.</p>
+
+        <h3>Echo Socket Example</h3>
+        <div class="highlighter-rouge"><div class="file">EchoWebSocket.java</div><pre><code class="java">
+import static lightning.websockets.WebSocketContext.*;
+
+import lightning.ann.OnEvent;
+import lightning.ann.WebSocket;
+import lightning.enums.EventType;
+
+@WebSocket(path="/echo")
+public class EchoWebSocket {
+  @OnEvent(EventType.WEBSOCKET_TEXT_MESSAGE)
+  public void handleTextMessage(String message) throws Exception {
+    sendText(message);
+  }
+
+  @OnEvent(EventType.WEBSOCKET_CONNECT)
+  public void handleConnect() throws Exception {
+    sendText("Hello!");
+  }
+}
+        </code></pre></div>
+
+        <h3>Tips &amp; Tricks</h3>
+        <ul>
+          <li>If you need broadcast functionality, you can save sessions to a static <code>ConcurrentHashMap</code> in your <code>WEBSOCKET_CONNECT</code> handler and remove them from the set in your <code>WEBSOCKET_CLOSE</code> handler. You can then iterate through the set to broadcast a message (for example, if you are implementing chat room functionality).</li>
         </ul>
       </section>
 
@@ -1359,11 +1364,45 @@ List&lt;String&gt; data = session().get("key").listOption(String.class).or(new A
       <section>
         <a name="templates"></a>
         <h2>Templates</h2>
-        <p>In Lightning, a template is rendered from a view name and a view model. Templates produce some sort of text output (typically HTML). The format of the view model is dependent upon the templating library your app is using.</p>
-        <p>By default, Lightning utilizes the FreeMarker Template Engine to render views. For FreeMarker, view names are simply the name of the template file (relative to the template files path specified in your config) and view models are simply a map of variable names to their respective values. For template language syntax and features, refer to the <a href="http://freemarker.org/" target="_blank">FreeMarker Documentation</a>.</p>
-        <p>You must <a href="#config">configure</a> a template files directory and may configure a different template engine if you do not like FreeMarker.</p>
-        <p>Templates may be rendered a variety of different ways.</p>
-        <p>Firstly, through the template APIs (on <code>lightning.server.Context</code>):</p>
+        <p>In Lightning, a template is rendered from a view name and a view model. Templates produce some sort of text output (typically HTML). The format of the view model is dependent upon the template engine you configure.</p>
+        <p>By default, Lightning utilizes the FreeMarker Template Engine to render views. With FreeMarker, view names are simply the name of the template file (relative to the template files path specified in your config) and view models are simply a map of variable names to their respective values. For template language syntax and features, refer to the <a href="http://freemarker.org/" target="_blank">FreeMarker Documentation</a>.</p>
+        <p>You must a template files directory to use templates. You may configure a different template engine if you do not like FreeMarker. For information on configuring templates, see <a href="#config">Configuration</a>.</p>
+        <p><strong>SECURITY ADVISORY:</strong> The template engine you are using may not automatically escape HTML characters (including the default FreeMarker template engine). You should take precautions to protect your application against XSS attacks. FreeMarker provides <a href="http://freemarker.org/docs/dgui_misc_autoescaping.html" target="_blank">auto-escaping</a> functionality for this purpose.</p>
+
+        <p>Templates may be rendered a variety of different ways:</p>
+        
+        <h3>Option 1</h3>
+        <p>You may return the view model from a route handler annotated with <code>@Template(name)</code>. This method is preferred when you know the name of the template at compile-time.</p>
+        <div class="highlighter-rouge"><div class="file">MyTemplateController.java</div><pre><code class="java">
+@Controller
+public final class MyTemplateController {
+  @Route(path="/", methods={GET})
+  @Template("view.ftl")
+  public Map&lt;String, ?&gt; handleView() throws Exception {
+    return ImmutableMap.of("key1", "value1", "key2", "value2");
+  }
+}
+        </code></pre></div>
+
+        <h3>Option 2</h3>
+
+        <p>You may return an instance of <code>ModelAndView</code> from a route handler annotated with <code>@Template</code>. This method is preferred when you do not know the name of the template at compile-time.</p>
+        <div class="highlighter-rouge"><div class="file">MyTemplateController.java</div><pre><code class="java">
+@Controller
+public final class MyTemplateController {
+  @Route(path="/", methods={GET})
+  @Template
+  public ModelAndView handleView() throws Exception {
+    return modelAndView("view.ftl", 
+                        ImmutableMap.of("key1", "value1", 
+                                        "key2", "value2"));
+  }
+}
+        </code></pre></div>
+
+        <h3>Option 3</h3>
+
+        <p>You may use the template APIs (on <code>lightning.server.Context</code>):</p>
         <div class="highlighter-rouge"><div class="file">API Reference</div><pre><code class="java">
 // To create a ModelAndView:
 modelAndView(viewName, viewModel)
@@ -1375,32 +1414,6 @@ renderToString(viewName, viewModel)
 // To render a model and view to the response body:
 render(modelAndView)
 render(viewName, viewModel)
-        </code></pre></div>
-        <p>Secondly, by returning an instance of <code>ModelAndView</code> from a route handler annotated with <code>@Template</code>:</p>
-        <div class="highlighter-rouge"><div class="file">MyTemplateController.java</div><pre><code class="java">
-@Controller
-public final class MyTemplateController {
-  @Route(path="/", methods={GET})
-  @Template
-  public ModelAndView handleView() throws Exception {
-    // This technique works great if you do not know the name of the view
-    // that you will render at compile-time.
-    return modelAndView("view.ftl", ImmutableMap.of());
-  }
-}
-        </code></pre></div>
-        <p>Thirdly, by returning the view model of a route handler annotated with <code>@Template(name)</code>:</p>
-        <div class="highlighter-rouge"><div class="file">MyTemplateController.java</div><pre><code class="java">
-@Controller
-public final class MyTemplateController {
-  @Route(path="/", methods={GET})
-  @Template("view.ftl")
-  public Map&lt;String, ?&gt; handleView() throws Exception {
-    // This technique works great if you do know the name of the view
-    // that you will render at compile-time.
-    return ImmutableMap.of();
-  }
-}
         </code></pre></div>
       </section>
 
@@ -1449,23 +1462,26 @@ public final class ExampleJsonController {
 }
         </code></pre></div>
 
-        <p>The Lightning JSON APIs optionally allow you to specify an XSSI prefix (for security reasons) and a field name conversion policy between Java objects and JSON.</p>
+        <p>The Lightning JSON APIs optionally allow you to specify an XSSI prefix (to mitigate XSSI attacks) and a field name conversion policy between Java objects and JSON.</p>
 
       </section>
 
       <section>
         <a name="validation"></a>
         <h2>Form Validation</h2>
-        <p>Each request has an attached <code><a href="https://github.com/lightning-framework/lightning/blob/master/src/main/java/lightning/mvc/Validator.java" target="_blank">Validator</a></code> that can be used to perform form (query parameter) validation on that request.</p>
+        <p>Each request has an attached <code><a href="https://github.com/lightning-framework/lightning/blob/master/src/main/java/lightning/mvc/Validator.java" target="_blank">Validator</a></code> that can be used to perform form (query parameter) validation on that request. The general usage of validators follows:</p>
         <div class="highlighter-rouge"><div class="file">General Usage</div><pre><code class="java">
-// Specify what you want to validate.
+import static lightning.server.Context.*;
+
+// Specify what you want to validate:
 validate("agreement").isChecked();
 validate("email").isEmail().isNotEmpty();
 validate("year").isNumberBetween(2000, 2100);
 validate("file").isFileSmallerThan(1024);
 validate("answer").isOneOf("A","B","C","D");
 
-if (validator().passes()) {
+// Check if the constraints you specified hold true for the request:
+if (passesValidation()) {
   // If validation succeeds, make changes to the database.
   saveData(request);
   showSuccessPage();
@@ -1482,7 +1498,7 @@ validator().getErrors()
 validator().getErrorOption(field)
 validator().getErrorsAsString()
 validator().passes() // (aliases passesValidation(), !validator().hasErrors())
-validateXsrf(name)
+validateXsrf(field)
 validateXsrf()
 validate(field).addError(errorMessage)
 validate(field).isEmail()
@@ -1541,9 +1557,9 @@ url().to(path, queryParams)
       <section>
         <a name="cookies"></a>
         <h2>Cookies</h2>
-        <p>Cookies can be used to store temporary client (browser) specific data. Cookies can be thought of as a map of variable names to string values. Cookies are stored with the client and are therefore subject to tampering and sudden deletion.</p>
-        <p>To ensure the integrity of cookies, Lightning will automatically sign the cookies you set with HMAC SHA256 and verify the signatures before allowing you to read the value of the cookie. This signing and verification process is made completely transparent to you by the Cookies API. This signing process prevents users from forging and modifying cookies, but does not prevent one user from copying another's cookies or sudden deletion of cookies. If a cookie's signature cannot be verified, the API will act as if the user did not send that cookie. If you prefer to use raw (unsigned) cookies, you may use the <a href="#requests">Request</a> and <a href="#responses">Response</a> rawCookie APIs directly.</p>
-        <p>Attempting to set a cookie after the response headers have already been committed will throw an exception.</p>
+        <p>Cookies can be used to store transient client (browser) specific data. Cookies can be thought of as a map of variable names to string values. Cookies are stored with the client and are therefore subject to direct viewing, tampering, and sudden deletion.</p>
+        <p>To ensure the integrity of cookies, Lightning will automatically sign the cookies you set with HMAC SHA256 and verify the signatures before allowing you to read the value of the cookie. This signing and verification process is made completely transparent to you by the Cookies API. This signing process prevents users from forging and modifying cookies, but does not prevent one user from copying another's cookies, sudden deletion of cookies, or disclosure of cookie values. If a cookie's signature cannot be verified, the API will act as if the user did not send that cookie. If you prefer to use raw (unsigned) cookies, you may use the <a href="#requests">Request</a> and <a href="#responses">Response</a> rawCookie APIs instead.</p>
+        <p>Attempting to set a cookie after the response headers have already been committed will throw an exception. You should set all cookies before taking an action that would commit the response or enable output buffering in your configuration.</p>
         <p>Cookies are sent with <code>HTTP ONLY</code> unless specified otherwise in an API invocation. This flag prevents the value of the cookie from being tampered with or read by JavaScript code and reduces the surface for XSS attacks.</p>
         <p>Cookies are sent with <code>SECURE ONLY</code> if SSL is enabled in <a href="#config">config</a> unless specified otherwise in an API invocation. This flag prevents the contents of the cookie from being accidently disclosed over an insecure connection.</p>
         <p>To utilize the cookies API, you must <a href="#config">configure</a> an HMAC private key.</p>
@@ -1565,11 +1581,18 @@ cookies().asMap()
       <section>
         <a name="sessions"></a>
         <h2>Sessions</h2>
-        <p>Sessions can be used to store temporary client (browser) specific data in a server-side data storage system. Sessions store a map of variable names to values. The storage system used is <a href="#config">configurable</a> and is linked to the user's browser by a cookie. You may store any type of <code>java.io.Serializable</code> object as a value in the session store.</p>
-        <p>Sessions are <em>lazy-loaded</em> - no calls to underlying storage will be made unless a controller invokes a method on <code>session()</code>. Sessions are automatically saved if they have been modified when you return from a route handler. The creation of new sessions or regenerating the session identifier may fail if the response has already been committed prior to returning from a route handler since the session cookie cannot be set - to get around this, manually invoke <code>save()</code> before taking an action that could commit the response or configure output buffering.
+
+        <p>Sessions can be used to store transient client (browser) specific data in a server-side data storage system. Conceptually, sessions can be thought of as a map of variable names to values. You may store any type of <code>java.io.Serializable</code> object as a value in the session store. Sessions <em>can not</em> be used to store persistent data as either the storage sytem or user may elect to terminate the session at any point in time.</p>
+
+        <p>Sessions serve a purpose similar to cookies but, unlike cookies, users cannot directly view or alter the information stored in their session and the size of each value is not limited. You should prefer using cookies where safe and possible since they are impose no server-side overhead.</p>
+
+        <p>The storage system used to back sessions is <a href="#config">configurable</a>. Sessions are linked between the storage system and the user's browser by an HMAC-signed cookie containing a random session identifier. The data storage system remembers only a hash of the session identifier. The framework does not provide protection against session fixation attacks; you should invoke <code>regenerateId()</code> when neccessary to mitigate these types of attacks.</p>
+
+        <p>Sessions are <em>lazy-loaded</em> - no calls to underlying storage will be made unless a controller invokes a method on <code>session()</code>. Sessions are automatically saved if they have been modified when you return from a route handler. Session saves may fail if the response has already been committed prior to returning from a route handler since the session cookie cannot be set - to get around this, manually invoke <code>save()</code> before taking an action that could commit the response or enable output buffering in your configuration.
         <div class="highlighter-rouge"><div class="file">API Reference</div><pre><code class="java">
 import static lightning.server.Context.session;
 
+// Getting and setting values:
 session().keys()
 session().set(key, value)
 session().get(key)
@@ -1577,13 +1600,13 @@ session().forget(key)
 session().has(key)
 session().asMap()
 
-// Get XSRF token for session.
+// Getting the XSRF token:
 session().xsrfToken()
 
-// Change and get XSRF token for session.
+// Change the XSRF token and get the new one:
 session().newXsrfToken()
 
-// Change the session identifier to new random token.
+// Change the session identifier:
 session().regenerateId()
 
 // Dirty sessions are automatically saved when you return from handler.
@@ -1594,7 +1617,7 @@ session().save()
 
       <section>
         <a name="users"></a>
-        <h2>Users, Groups, &amp; Permissions</h2>
+        <h2>Users, Groups, &amp; Permissions (WIP)</h2>
         <p>Users, Groups, Permissions, and <a href="#auth">Auth</a> are all backed by storage drivers that must be <a href="#config">configured.</a>
         <p><strong>Users</strong> are Lightning's internal representation of user management.</p>
         <div class="highlighter-rouge"><div class="file">API Reference</div><pre><code class="java">
@@ -1717,7 +1740,7 @@ if (user().hasPrivilege(Permissions.MANAGE_USERS.ordinal())) {
 
       <section>
         <a name="auth"></a>
-        <h2>Authentication</h2>
+        <h2>Authentication (WIP)</h2>
         <p>You must <a href="#config">configure</a> a storage driver for users, groups, and auth to use these APIs. The authentication APIs provide a way for securely handling user authentication and are configured to be resilient against all known forms of attack by default <em>if you deploy using SSL</em>. The authentication API uses a cookie to link the client (browser) to an authentication session in your persistent data store.</p>
         <p>Authentication sessions are typically short-lived (inactivity timeout of one hour unless configured differently). Authentication sessions are long-lived (inactivity timeout of two weeks unless configured differently) only if the persistent flag is set.</p>
         <div class="highlighter-rouge"><div class="file">API Reference</div><pre><code class="java">
@@ -1744,7 +1767,7 @@ auth().loginAs(user, isPersistent, isFromToken)
 // Optionally accepts extra info (passed to the underlying auth driver) - usually null.
 // This method will check security measures (such as throttling).
 // Will indicate the user has entered their password recently if successful.
-// Throws an exception if unsuccessful.
+// Throws an AuthException if unsuccessful.
 auth().attempt(username, plaintextPassword, isPersistent, extraInfo)
 
 // Use to manage other sessions logged in to a user's account.
@@ -1761,10 +1784,110 @@ auth().checkPassword(plaintextPasword)
 // actual password.
 // Useful to restrict access to sensitive data (e.g. billing info).
 // This can be used to prevent someone who walks up to a machine with an already logged in user
-// from making changes to that user's account without knowing their password.
+// from making changes to that user's account without knowing their password. You can configure
+// a timeout period.
 auth().hasEnteredPasswordRecently()
         </code></pre></div>
         <p>Route handlers may be annotated with <code>@RequireAuth</code> to filter unauthenticated requests.</p>
+
+
+        <p>By default, we utilize a SQL database driver to store users, sessions, and authentication. You may <a href="#config">configure</a> different storage drivers if you wish. To use the provided database storage driver, you simply need to import the <a href="https://github.com/lightning-framework/lightning/tree/master/src/main/resources/lightning/schema" target="_blank">schema</a> into your database.</p>
+        <p>Our APIs provide convenience methods for handling authentication, sessions, and user data. However, you'll still need to make your own log in, log out, and registration controllers. We have included some skeletons for your convenience.</p>
+
+        <div class="highlighter-rouge"><div class="file">/src/main/java/myapp/controllers/AuthController.java</div><pre><code class="java">
+public final class AuthController {
+  @Route(path="/login", methods={GET})
+  @Template('login.ftl')
+  public Object handleLoginGET() throws Exception {
+    // Display your login form.
+    return ImmutableMap.of(); // The view model.
+  }
+
+  @Route(path="/register", methods={GET})
+  @Template('register.ftl')
+  public Object handleRegisterGET() throws Exception {
+    // Display your registration form.
+    return ImmutableMap.of(); // The view model.
+  }
+
+  @Route(path="/logout", methods={GET})
+  public void handleLogoutGET() throws Exception {
+    if (isLoggedIn()) {
+      auth().logout(true);
+    }
+
+    redirect(url.to("/"));
+  }
+
+  @Route(path="/login", methods={POST})
+  @Template('login.ftl')
+  public Object handleLoginPOST() throws Exception {
+    redirectIfLoggedIn(url.to("/"));
+
+    // Add form validation.
+    validate("username").isNotEmpty();
+    validaet("password").isNotEmpty();
+
+    try {
+      if (passesValidation()) {
+        // Delegate to framework authentication.
+        String username = queryParam("username").stringValue();
+        String password = queryParam("password").stringValue();
+        boolean persistent = queryParam("persistent").isChecked();
+        auth().attempt(username, password, persistent, null);
+        redirect(url().to("/profile"));
+      }
+    } catch (AuthException e) {
+      switch (e.getType()) {
+        case NO_USER:
+        case INVALID_PASSWORD:
+        case INVALID_USERNAME:
+        case USER_BANNED:
+          validator().addError("username", "Invalid username/password combination.");
+          break;
+        case IP_THROTTLED:
+        case USER_THROTTLED:
+          validator().addError("username", "You must wait before trying again.");
+          break;
+        default:
+          throw e; // Re-throw the exception to generate an internal server error.
+      }
+    }
+
+    // Re-show login page with errors if authentication failed.
+    return ImmutableMap.of("errors", validator.getErrors()); // View model for template.
+  }
+
+  @Route(path="/register", methods={POST})
+  public void handleRegisterPOST() throws Exception {
+    // TODO: Add form validation.
+    validate("username").isShorterThan(30)
+                        .isLongerThan(3)
+                        .isAlphaNumeric();
+    validate("password").isLongerThan(5)
+                        .isShorterThan(100);
+    validate("email").isEmail();
+
+     if (passesValidation()) {
+      // Create the user account.
+      String username = queryParam("username").stringValue();
+      String password = queryParam("password").stringValue();
+      String email = queryParam("email").stringValue();
+
+      // Note: exception will be thrown on failure (e.g. duplicate username).
+      User user = users().create(username, email, password);
+      render('register_success.ftl', ImmutableMap.of());
+      return;
+    }
+
+    // Re-show registration form on error.
+    render('register.ftl',
+           ImmutableMap.of("errors", validator.getErrors()); // View model for template.
+  }
+}
+        </code></pre></div>
+        <p>You can access the currently authenticated user in any of your controllers by invoking <code>user()</code>. If no user is logged in, a <code>NotAuthorizedException</code> is thrown which generates an HTTP 401 error page. You can check if a user is logged in by invoking <code>isLoggedIn()</code>. Annotating a route with <code>@RequireAuth</code> will filter unauthenticated requests for that route. Alternatively, you may want to look into using path-based filters.</p>
+
       </section>
 
       <section>
@@ -1831,53 +1954,60 @@ cache().clear()
       <section>
         <a name="async"></a>
         <h2>Async Handlers &amp; SSE</h2>
-        <div class="notice"><strong>Work-In-Progress:</strong> This feature is experimental and the API is subject to change in future releases.</div>
-        <p>To write asynchronous handlers, you can use the Servlet Async API:</p>
-        <div class="highlighter-rouge"><div class="file">MyAsyncController.java</div><pre><code class="java">
-import static lightning.enums.HTTPMethod.*;
-import static lightning.server.Context.*;
-import lightning.ann.Route;
-import lightning.ann.Controller;
+        <h3>Async Handlers</h3>
+        <p>An asynchronous handler alters a request's life cycle enabling it to outlive the invocation of a request handler. You may use this functionality to release the thread reserved for processing the request back into the server thread pool while waiting for a lengthy I/O operation. An example follows:</p>
+        <div class="highlighter-rouge"><div class="file">AsyncController.java</div><pre><code class="java">
+import lightning.ann.*;
 import lightning.mvc.HandlerContext;
 
+import static lightning.enums.HTTPMethod.*;
+import static lightning.server.Context.*;
+
+import java.util.concurrent.TimeUnit;
+
 @Controller
-class MyAsyncController {
-  @Route(path="/", methods={GET})
-  public void handleAsync() throws Exception {
-    // Inform the context you wish to go async.
-    // Returns an object that holds lightning's request-specific context.
+public class AsyncController {
+  @Route(path="/asyncDemo", methods={GET})
+  public void handleRequestAsync() throws Exception {
+    // Invoke goAsync to start asynchronous mode.
+    // An async context is returned to facilitate this.
+    // HandlerContext is the instance version of lightning.server.Context.
+    // lightning.server.Context methods ARE NOT SAFE TO USE after going async.
     HandlerContext context = goAsync();
 
-    // You may now safely invoke the servlet async API.
-    final AsyncContext asyncContext = request.raw().startAsync();
-
-    // Schedule this request to be handled by some async process that will
-    // execute at a later point in time on some other thread.
-    scheduleAsyncTask(() -> {
-      try {
-        // ... DO WHATEVER TASKS YOU NEED TO DO ...
-        // May involve non-blocking IO for example.
-      } finally {
-        // IMPORTANT: MUST CLOSE CONTEXTS TO AVOID MEMORY LEAK!
+    // You may offload the request processing to another thread or queue it up
+    // for some lengthy I/O operation.
+    ((new Thread() {
+      @Override
+      public void run() {
         try {
-          context.close(); // Close lightning's context first.
+          for (int i = 0; i &lt; 5; i++) {
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            // When you decide you are ready to work on the response, you can
+            // use the async context to do so:
+            context.response().write("Hello World!\n");
+            context.response().flush();
+          }
+        } catch (Throwable e) {
+          // This is the recommended way to handle top-level exceptions as it will
+          // log the error and then follow the standard exception handling path.
+          context.handleException(e);
         } finally {
-          asyncContext.complete(); // Then close the servlet context.
+          // IMPORTANT: You must close to context when you are finished servicing
+          //            the request to avoid leaking resources.
+          context.close();
         }
       }
-    });
+    })).start();
 
-    // Upon returning, thread allocated to the request is released back into
-    // the server thread pool, but resources allocated to the request are not
-    // cleaned up until you close the contexts.
-  }
-
-  private void scheduleAsyncTask() throws Exception {
-    // You implement this.
+    // Returning releases the thread back into the server thread pool to handle another request.
   }
 }
         </code></pre></div>
-        <p>You can utilize asynchronous handlers to efficiently handle Server-Sent Events (SSE). Jetty's <a href="https://github.com/jetty-project/jetty-eventsource-servlet/blob/master/src/main/java/org/eclipse/jetty/servlets/EventSourceServlet.java" target="_blank">EventSourceServlet</a> provides an example.</p>
+
+        <h3>Server-Sent Events (SSE)</h3>
+        <div class="notice">A native API for SSE (Server-Sent Events) is not available.</div>
+        <p>It is possible to utilize asynchronous handlers to efficiently emit events to a server-sent event stream. We leave it as an exercise to the reader to implement the infrastructure for handling an SSE endpoint efficiently since it would likely be application-specific. You may find the <a href="https://www.w3.org/TR/eventsource/" target="_blank">SSE Specification</a> and Jetty's <a href="https://github.com/jetty-project/jetty-eventsource-servlet/blob/master/src/main/java/org/eclipse/jetty/servlets/EventSourceServlet.java" target="_blank">EventSourceServlet implementation</a> useful.</p>
       </section>
 
       <section>
@@ -1906,13 +2036,17 @@ class FileUploadController {
         <p>Lightning ships convenience functions for accessing a MySQL database through a connection pool. The usage of this functionality is entirely optional. In order to use these APIs, you'll need to <a href="#config">configure</a> a database connection under the <code>db</code> property.</p>
 
         <div class="info-box">
-        A <em>connection-pool</em> (<code>MySQLDatabaseProvider</code>) is a thread-safe factory used by worker threads to obtain non-thread-safe database connection objects (<code>MySQLDatabase</code>) for temporary, exclusive use. Connection pools typically maintain a variable-sized pool of connections that workers may lease. If the pool is exhausted, then attempting to lease a connection from the pool will block until one is available. When a worker is finished with a leased connection, it must <code>close()</code> the connection to return it to the pool for re-use. For more information, see <a href="https://en.wikipedia.org/wiki/Connection_pool" target="_blank">Connection Pooling - Wikipedia</a>.
+        A <em>connection-pool</em> (<code>MySQLDatabaseProvider</code>) is a thread-safe factory used by worker threads to obtain non-thread-safe database connection objects (<code>MySQLDatabase</code>) for temporary, exclusive use. Connection pools typically maintain a variable-sized pool of connections that workers may lease. If the pool is exhausted, then attempting to lease a connection from the pool will block until one is available. When a worker is finished with a leased connection, it must <code>close()</code> the connection to return it to the pool for re-use. Connection pools are convenient since re-using connections avoids the round trip times needed to set up a new connection. For more information, see <a href="https://en.wikipedia.org/wiki/Connection_pool" target="_blank">Connection Pooling - Wikipedia</a>.
         </div>
 
         <p>To obtain a thread-safe database connection from the connection pool, you may invoke <code>db()</code> (on <code>lightning.server.Context</code>) from within a route handler, filter, or exception handler. The connection you obtain will be reserved from the point at which you first invoke <code>db()</code> until the request is completely handled. Thus, route handlers that do not utilize the database will not consume any resources from the pool and subsequent invocations of <code>db()</code> for the same request will return the same connection. Since the database connection is automatically returned to the pool by the framework, you do not need to <code>close()</code> the connection returned by <code>db()</code> (though it <em>is not</em> harmful to do so). You must still, however, explicitly close any prepared statements or result sets that you create using that connection (Java's try-with-resources blocks are convenient for this).</p>
 
         <div class="info-box">
-        To use the database with web sockets, you can <a href="#deps_injection">dependency inject</a> the connection pool into your <code>@WebSocketFactory</code>. See <a href="#web_sockets">Web Sockets</a> for more information.
+        To use the database with web sockets, you can <a href="#deps_injection">dependency inject</a> the connection pool into your <code>@WebSocket</code>. See <a href="#web_sockets">Web Sockets</a> for more information.<br />
+        <br />
+        To use the database with <a href="#async">async handlers</a>, you should not invoke <code>db()</code> - this will reserve the connection until the async context is closed. Instead, you should use the connection pool directly to lease a connection when needed. A reference to the pool can be obtained via dependency injection on <code>MySQLDatabaseProvider</code>.<br />
+        <br />
+        If you use the pool directly, keep in mind that a single thread must never be able to hold a lease on more than one connection simultaneously - doing so creates the potential for a deadlock.
         </div>
 
         <p>Lightning's database connections provide access to the standard <code>java.sql</code> APIs. In addition, Lightning includes some quality of life improvement macros and classes. You should prefer using Lightning's <code>NamedPreparedStatement</code> to the standard <code>java.sql.PreparedStatement</code>.</p>
@@ -2147,7 +2281,7 @@ public final class AppLauncher {
       <section>
         <a name="packaging_deployment"></a>
         <h2>Packaging &amp; Deployment</h2>
-        <p>Lightning applications can be packaged into a stand-alone JAR file for deployment to a production server. The server need only have a JRE 1.8+ to run Lightning. In order to deploy properly, you must make sure that you are following the Maven directory structure guidelines and properly placing resources into the classpath (<code>/src/main/{resources|java}</code>). You should also make sure that debug mode is disabled in your deployment.</p>
+        <p>Lightning applications can be packaged into a stand-alone JAR file for deployment to a production server. The server need only have a JRE 1.8+ to run Lightning. In order to deploy properly, you must make sure that you are following the Maven directory structure guidelines and properly placing resources into the classpath (<code>/src/main/{resources|java}</code>).</p>
         <p>You may use a JAR packager of your choice. We have found the Maven assembly plugin to be very useful and fast at packaging. To utilize the assmebly plugin, you need to modify your <code>pom.xml</code>:</p>
 
         <div class="highlighter-rouge"><div class="file">/pom.xml</div><pre><code class="xml">

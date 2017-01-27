@@ -390,3 +390,29 @@ table.grid tbody tr:first-child {
 table.grid thead+tbody tr:first-child {
   border-top: none !important;
 }
+
+.image-frame {
+  display: block;
+  background-color: #999;
+  padding: 5px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+  color: #FFF;
+  border: 2px solid #000;
+}
+
+.image-frame:hover {
+  color: #FFF;
+}
+
+.image-frame img {
+  border: 2px solid #000;
+  box-sizing: border-box;
+}
+
+.image-frame span {
+  display: block;
+  padding-left: 7px;
+  padding-right: 7px;
+}
